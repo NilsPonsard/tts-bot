@@ -2,7 +2,7 @@ package commands
 
 import (
 	cli "github.com/jawher/mow.cli"
-	"github.com/nilsponsard/go-starter/internal/commands/ping"
+	"github.com/nilsponsard/tts-bot/internal/commands/ping"
 )
 
 // configure subcommands

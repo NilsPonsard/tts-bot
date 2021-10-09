@@ -1,8 +1,8 @@
 # Compilation
-go-starter: go.sum main.go */**/*.go .env */**/**/*.go
+tts-bot: go.sum main.go */**/*.go .env */**/**/*.go
 	./scripts/build.sh
 
-go-starter.exe : go.sum main.go */**/*.go .env */**/**/*.go
+tts-bot.exe : go.sum main.go */**/*.go .env */**/**/*.go
 	env CC=x86_64-w64-mingw32-gcc CGO_ENABLED=1 GOOS=windows GOARCH=amd64 ./scripts/build.sh
 
 # fetch dépendencies
@@ -12,9 +12,9 @@ go.sum : go.mod
 
 .PHONY: install deb docs win all clean manuals
 # require write rights for $(DESTDIR)
-install : go-starter
+install : tts-bot
 	mkdir -p $(DESTDIR)/usr/sbin/
-	cp ./go-starter $(DESTDIR)/usr/sbin/go-starter
+	cp ./tts-bot $(DESTDIR)/usr/sbin/tts-bot
 
 all: deb win linux manuals
 	./scripts/publish.sh
@@ -34,6 +34,6 @@ manuals :
 	./scripts/manuals.sh
 
 clean : 
-	rm -f go-starter go.sum
+	rm -f tts-bot go.sum
 	rm -rf package/
 	rm -rf publish/

@@ -1,4 +1,4 @@
-% go-starter user’s manual
+% tts-bot user’s manual
 
 ## Introduction
 
