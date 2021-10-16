@@ -7,7 +7,6 @@ tts-bot.exe : go.sum main.go */**/*.go .env */**/**/*.go
 
 # fetch dépendencies
 go.sum : go.mod
-	go get
 	go mod tidy
 
 .PHONY: install deb docs win all clean manuals

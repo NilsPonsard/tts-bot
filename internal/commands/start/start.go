@@ -1,40 +1,48 @@
 package start
 
 import (
+	"os"
+	"os/signal"
+
 	"github.com/bwmarrin/discordgo"
-	htgotts "github.com/hegedustibor/htgo-tts"
 	cli "github.com/jawher/mow.cli"
+	"github.com/nilsponsard/tts-bot/internal/interactions"
 	"github.com/nilsponsard/tts-bot/pkg/verbosity"
 )
 
-type fileHandler struct{}
-
-func (*fileHandler) Play(filename string) error {
-	verbosity.Info(filename)
-	return nil
-}
-
 // setup ping command
 func Start(job *cli.Cmd) {
+
+	token := job.StringArg("TOKEN", "", "Discord token")
 
 	// function to execute
 
 	job.Action = func() {
 
-		speech := htgotts.Speech{Folder: "audio", Language: "en", Handler: &fileHandler{}}
-
-		err := speech.Speak("test")
-
+		discord, err := discordgo.New("Bot " + *token)
 		if err != nil {
 			verbosity.Error(err)
-		}
-
-		discord, err := discordgo.New("Bot " + "authentication token")
-		if err != nil {
-			verbosity.Error(err)
+			cli.Exit(1)
 		}
 
 		verbosity.Info(discord)
+
+		discord.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
+			verbosity.Info("Bot is up!")
+		})
+
+		err = discord.Open()
+		if err != nil {
+			verbosity.Error(err)
+			cli.Exit(1)
+		}
+
+		interactions.InitCommands(discord)
+
+		stop := make(chan os.Signal, 1)
+		signal.Notify(stop, os.Interrupt)
+		<-stop
+		verbosity.Debug("Gracefully shutdowning")
 
 	}
 }
