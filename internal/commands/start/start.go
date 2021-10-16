@@ -80,7 +80,7 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	for _, state := range guild.VoiceStates {
 
-		if state.UserID == m.Member.User.ID {
+		if state.UserID == m.Author.ID {
 			channel, err = s.State.Channel(state.ChannelID)
 			if err != nil {
 				verbosity.Error(err)
