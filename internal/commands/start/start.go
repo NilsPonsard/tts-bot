@@ -30,6 +30,7 @@ func Start(job *cli.Cmd) {
 		discord.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 			verbosity.Info("Bot is up!")
 		})
+		discord.AddHandler(messageCreate)
 
 		err = discord.Open()
 		if err != nil {
@@ -45,4 +46,54 @@ func Start(job *cli.Cmd) {
 		verbosity.Debug("Gracefully shutdowning")
 
 	}
+}
+
+// This function will be called (due to AddHandler above) every time a new
+// message is created on any channel that the authenticated bot has access to.
+func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
+
+	// Ignore all messages created by the bot itself
+	// This isn't required in this specific example but it's a good practice.
+	if m.Author.ID == s.State.User.ID {
+		return
+	}
+	verbosity.Debug(m.ChannelID)
+
+	guild, err := s.State.Guild(m.GuildID)
+
+	if err != nil {
+		verbosity.Error(err)
+		return
+	}
+
+	msgChannel, err := s.State.Channel(m.ChannelID)
+
+	if err != nil {
+		verbosity.Error(err)
+		return
+	}
+	if msgChannel.Name != "no-mic" {
+		return
+	}
+
+	var channel *discordgo.Channel
+
+	for _, state := range guild.VoiceStates {
+
+		if state.UserID == m.Member.User.ID {
+			channel, err = s.State.Channel(state.ChannelID)
+			if err != nil {
+				verbosity.Error(err)
+			}
+			break
+		}
+
+	}
+
+	if channel == nil {
+		s.ChannelMessageSend(m.ChannelID, "you are not in a voice channel")
+	} else {
+		s.ChannelMessageSend(m.ChannelID, channel.Name)
+	}
+
 }

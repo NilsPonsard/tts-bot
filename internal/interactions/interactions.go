@@ -11,12 +11,12 @@ func InitCommands(session *discordgo.Session) {
 
 	var commands = []*discordgo.ApplicationCommand{
 		{
-			Name:        "help",
+			Name:        "setup",
 			Description: "setup no-mic channel and its language",
 			Options: []*discordgo.ApplicationCommandOption{
 				{
 					Type:        discordgo.ApplicationCommandOptionString,
-					Name:        "Language",
+					Name:        "language",
 					Description: "Language identifier",
 					Required:    true,
 				},
@@ -25,7 +25,7 @@ func InitCommands(session *discordgo.Session) {
 	}
 	var commandHandlers = map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate){
 
-		"help": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+		"setup": func(s *discordgo.Session, i *discordgo.InteractionCreate) {
 			margs := []interface{}{
 				// Here we need to convert raw interface{} value to wanted type.
 				// Also, as you can see, here is used utility functions to convert the value
