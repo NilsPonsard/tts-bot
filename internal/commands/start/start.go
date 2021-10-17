@@ -3,6 +3,7 @@ package start
 import (
 	"bufio"
 	"encoding/binary"
+	"io"
 	"os"
 	"os/exec"
 	"os/signal"
@@ -96,12 +97,16 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	}
 
+	//-- todo : spak queue
+
 	if channel == nil {
 		s.ChannelMessageSend(m.ChannelID, "you are not in a voice channel")
+		s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
 	} else {
 
-		speech := htgotts.Speech{Folder: "audio", Language: "en"}
-		file, err := speech.Speak(m.Author.Username + " said : " + m.Content)
+		speech := htgotts.Speech{Folder: "audio", Language: "es"}
+		verbosity.Debug(m.Member.Nick)
+		file, err := speech.Speak(m.Member.Nick + " a dit : " + m.Content)
 
 		if err != nil {
 			verbosity.Error(err)
@@ -141,12 +146,18 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			audioBuffer := make([]int16, 960*2)
 			err = binary.Read(buffer, binary.LittleEndian, &audioBuffer)
 
+			if err == io.EOF || err == io.ErrUnexpectedEOF {
+				break
+			}
+
 			if err != nil {
 				verbosity.Error(err)
 				break
 			}
 			soundChan <- audioBuffer
 		}
+		voice.Speaking(false)
+		s.MessageReactionAdd(m.ChannelID, m.ID, "✅")
 	}
 
 }
