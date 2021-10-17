@@ -11,6 +11,7 @@ import (
 	"github.com/bwmarrin/discordgo"
 	cli "github.com/jawher/mow.cli"
 	"github.com/nilsponsard/tts-bot/internal/dgvoice"
+	"github.com/nilsponsard/tts-bot/internal/htgotts"
 	"github.com/nilsponsard/tts-bot/internal/interactions"
 	"github.com/nilsponsard/tts-bot/pkg/verbosity"
 )
@@ -99,7 +100,15 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.ChannelMessageSend(m.ChannelID, "you are not in a voice channel")
 	} else {
 
-		ffmpeg := exec.Command("ffmpeg", "-i", "./audio/1_MOA_1.flac", "-f", "s16le", "-ar", strconv.Itoa(48000), "-ac",
+		speech := htgotts.Speech{Folder: "audio", Language: "en"}
+		file, err := speech.Speak(m.Author.Username + " said : " + m.Content)
+
+		if err != nil {
+			verbosity.Error(err)
+			return
+		}
+
+		ffmpeg := exec.Command("ffmpeg", "-i", file, "-f", "s16le", "-ar", strconv.Itoa(48000), "-ac",
 			strconv.Itoa(2), "pipe:1")
 
 		voice, err := s.ChannelVoiceJoin(m.GuildID, channel.ID, false, true)
@@ -138,7 +147,6 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 			}
 			soundChan <- audioBuffer
 		}
-		s.ChannelMessageSend(m.ChannelID, channel.Name)
 	}
 
 }
