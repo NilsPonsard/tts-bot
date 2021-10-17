@@ -1,11 +1,16 @@
 package start
 
 import (
+	"bufio"
+	"encoding/binary"
 	"os"
+	"os/exec"
 	"os/signal"
+	"strconv"
 
 	"github.com/bwmarrin/discordgo"
 	cli "github.com/jawher/mow.cli"
+	"github.com/nilsponsard/tts-bot/internal/dgvoice"
 	"github.com/nilsponsard/tts-bot/internal/interactions"
 	"github.com/nilsponsard/tts-bot/pkg/verbosity"
 )
@@ -93,6 +98,46 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if channel == nil {
 		s.ChannelMessageSend(m.ChannelID, "you are not in a voice channel")
 	} else {
+
+		ffmpeg := exec.Command("ffmpeg", "-i", "./audio/1_MOA_1.flac", "-f", "s16le", "-ar", strconv.Itoa(48000), "-ac",
+			strconv.Itoa(2), "pipe:1")
+
+		voice, err := s.ChannelVoiceJoin(m.GuildID, channel.ID, false, true)
+
+		if err != nil {
+			verbosity.Error(err)
+		} else {
+			verbosity.Debug(voice)
+			voice.Speaking(true)
+		}
+
+		out, err := ffmpeg.StdoutPipe()
+		if err != nil {
+			verbosity.Error(err)
+			return
+		}
+		buffer := bufio.NewReaderSize(out, 16384)
+		err = ffmpeg.Start()
+		if err != nil {
+			verbosity.Error(err)
+			return
+		}
+		voice.Speaking(true)
+
+		soundChan := make(chan []int16, 2)
+
+		go dgvoice.SendPCM(voice, soundChan)
+		for {
+
+			audioBuffer := make([]int16, 960*2)
+			err = binary.Read(buffer, binary.LittleEndian, &audioBuffer)
+
+			if err != nil {
+				verbosity.Error(err)
+				break
+			}
+			soundChan <- audioBuffer
+		}
 		s.ChannelMessageSend(m.ChannelID, channel.Name)
 	}
 
