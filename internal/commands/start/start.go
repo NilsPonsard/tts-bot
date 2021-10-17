@@ -17,6 +17,8 @@ import (
 	"github.com/nilsponsard/tts-bot/pkg/verbosity"
 )
 
+var VCqueue = make(chan int, 1)
+
 // setup ping command
 func Start(job *cli.Cmd) {
 
@@ -104,9 +106,14 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
 	} else {
 
-		speech := htgotts.Speech{Folder: "audio", Language: "es"}
-		verbosity.Debug(m.Member.Nick)
-		file, err := speech.Speak(m.Member.Nick + " a dit : " + m.Content)
+		name := m.Member.Nick
+		if len(name) < 1 {
+			name = m.Author.Username
+		}
+
+		speech := htgotts.Speech{Folder: "audio", Language: "de"}
+		verbosity.Debug(name)
+		file, err := speech.Speak(name + " a dit : " + m.Content)
 
 		if err != nil {
 			verbosity.Error(err)
