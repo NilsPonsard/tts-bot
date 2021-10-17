@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"os/signal"
 	"strconv"
+	"sync"
 
 	"github.com/bwmarrin/discordgo"
 	cli "github.com/jawher/mow.cli"
@@ -17,10 +18,15 @@ import (
 	"github.com/nilsponsard/tts-bot/pkg/verbosity"
 )
 
-var VCqueue = make(chan int, 1)
+var (
+	mapLock  sync.Mutex
+	queueMap map[string]chan int
+)
 
 // setup ping command
 func Start(job *cli.Cmd) {
+
+	queueMap = make(map[string]chan int)
 
 	token := job.StringArg("TOKEN", "", "Discord token")
 
@@ -38,6 +44,7 @@ func Start(job *cli.Cmd) {
 
 		discord.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 			verbosity.Info("Bot is up!")
+			interactions.InitCommands(discord)
 		})
 		discord.AddHandler(messageCreate)
 
@@ -46,8 +53,6 @@ func Start(job *cli.Cmd) {
 			verbosity.Error(err)
 			cli.Exit(1)
 		}
-
-		interactions.InitCommands(discord)
 
 		stop := make(chan os.Signal, 1)
 		signal.Notify(stop, os.Interrupt)
@@ -106,12 +111,31 @@ func messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		s.MessageReactionAdd(m.ChannelID, m.ID, "❌")
 	} else {
 
+		mapLock.Lock()
+		if queueMap[channel.ID] == nil {
+
+			queueMap[channel.ID] = make(chan int, 1)
+
+			queueMap[channel.ID] <- 1
+
+		}
+
+		mapLock.Unlock()
+
+		<-queueMap[channel.ID]
+
+		defer func() {
+			mapLock.Lock()
+			queueMap[channel.ID] <- 1
+			mapLock.Unlock()
+		}()
+
 		name := m.Member.Nick
 		if len(name) < 1 {
 			name = m.Author.Username
 		}
 
-		speech := htgotts.Speech{Folder: "audio", Language: "de"}
+		speech := htgotts.Speech{Folder: "audio", Language: "fr"}
 		verbosity.Debug(name)
 		file, err := speech.Speak(name + " a dit : " + m.Content)
 
